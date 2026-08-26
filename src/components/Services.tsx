@@ -1,22 +1,48 @@
-import { services } from '../data/site'
+import { services } from "../data/site";
 
 export default function Services() {
-  const groups = ['Haircuts', 'Colour', 'Texture']
+  const groupedServices = services.reduce(
+    (groups, service) => {
+      if (!groups[service.group]) {
+        groups[service.group] = [];
+      }
+
+      groups[service.group].push(service);
+
+      return groups;
+    },
+    {} as Record<string, typeof services>,
+  );
+
   return (
     <section className="section services" id="services">
-      <div className="sectionHead"><p className="eyebrow">OUR SERVICES</p><h2>Simple, personal,<br/><em>experienced.</em></h2><p className="muted">Pricing can be added later as “From $XX” or kept consultation-based.</p></div>
+      <div className="sectionHead">
+        <p className="eyebrow">OUR SERVICES</p>
+
+        <h2>
+          Care for every
+          <br />
+          <em>style.</em>
+        </h2>
+      </div>
+
       <div className="serviceGroups">
-        {groups.map(group => (
-          <div className="serviceGroup" key={group}>
-            <h3>{group}</h3>
-            {services.filter(s => s.group === group).map(s => (
-              <div className="serviceRow" key={s.name}>
-                <div><strong>{s.name}</strong><p>{s.description}</p></div><span>↗</span>
+        {Object.entries(groupedServices).map(([groupName, groupServices]) => (
+          <div className="serviceGroup" key={groupName}>
+            <h3>{groupName}</h3>
+
+            {groupServices.map((service) => (
+              <div className="serviceRow" key={service.name}>
+                <div>
+                  <strong>{service.name}</strong>
+
+                  <p>{service.description}</p>
+                </div>
               </div>
             ))}
           </div>
         ))}
       </div>
     </section>
-  )
+  );
 }
