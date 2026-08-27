@@ -1,3 +1,5 @@
+import BookingCalendar from "./BookingCalendar";
+
 import { useMemo, useState } from "react";
 
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
@@ -351,11 +353,11 @@ export default function BookPage() {
                 <h3>Select your preferred date.</h3>
 
                 <p>
-                  Available times will be based on the combined duration of your
+                  Available times are based on the combined duration of your
                   selected services.
                 </p>
 
-                <div className="calendarPlaceholder">Calendar coming next</div>
+                <BookingCalendar durationMinutes={totalDurationMinutes} />
               </div>
             </div>
           </section>
