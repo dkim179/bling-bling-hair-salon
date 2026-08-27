@@ -13,8 +13,20 @@ import {
 
 import { getAppointmentsForRange } from "../data/appointments";
 
+/* ========================================
+   SELECTION TYPE
+======================================== */
+
+export type BookingDateTimeSelection = {
+  date: Date;
+  dateKey: string;
+  startMinutes: number;
+};
+
 type BookingCalendarProps = {
   durationMinutes: number;
+
+  onSelectionChange: (selection: BookingDateTimeSelection | null) => void;
 };
 
 type CalendarDay = {
@@ -24,8 +36,13 @@ type CalendarDay = {
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
+/* ========================================
+   COMPONENT
+======================================== */
+
 export default function BookingCalendar({
   durationMinutes,
+  onSelectionChange,
 }: BookingCalendarProps) {
   const today = new Date();
 
@@ -54,9 +71,11 @@ export default function BookingCalendar({
       setLoadingAppointments(true);
 
       const year = visibleMonth.getFullYear();
+
       const month = visibleMonth.getMonth();
 
       const firstDate = new Date(year, month, 1);
+
       const lastDate = new Date(year, month + 1, 0);
 
       try {
@@ -94,19 +113,21 @@ export default function BookingCalendar({
 
   const calendarDays = useMemo<CalendarDay[]>(() => {
     const year = visibleMonth.getFullYear();
+
     const month = visibleMonth.getMonth();
 
     const firstDay = new Date(year, month, 1);
+
     const lastDay = new Date(year, month + 1, 0);
 
     /*
-      JS:
-      Sunday = 0
-      Monday = 1
+        JavaScript:
+        Sunday = 0
+        Monday = 1
 
-      We want calendar:
-      Monday -> Sunday
-    */
+        Calendar:
+        Monday -> Sunday
+      */
 
     const leadingDays = (firstDay.getDay() + 6) % 7;
 
@@ -128,6 +149,7 @@ export default function BookingCalendar({
     for (let day = 1; day <= lastDay.getDate(); day++) {
       days.push({
         date: new Date(year, month, day),
+
         currentMonth: true,
       });
     }
@@ -161,12 +183,40 @@ export default function BookingCalendar({
       return [];
     }
 
-    return getAvailableSlots(
-      selectedDate,
-      durationMinutes,
-      appointments,
-    );
+    return getAvailableSlots(selectedDate, durationMinutes, appointments);
   }, [selectedDate, durationMinutes, appointments]);
+
+  /*
+    Slots that would be possible if there were no existing bookings.
+
+    This lets us distinguish between:
+    - fully booked
+    - no remaining times today
+    - selected service does not fit into the business day
+  */
+  const theoreticalSlots = useMemo(() => {
+    if (!selectedDate) {
+      return [];
+    }
+
+    return getAvailableSlots(selectedDate, durationMinutes, []);
+  }, [selectedDate, durationMinutes]);
+
+  const selectedDateIsToday =
+    selectedDate !== null &&
+    formatDateKey(selectedDate) === formatDateKey(new Date());
+
+  /* ========================================
+     RESET SELECTION
+  ======================================== */
+
+  const resetSelection = () => {
+    setSelectedDate(null);
+
+    setSelectedStartTime(null);
+
+    onSelectionChange(null);
+  };
 
   /* ========================================
      MONTH NAVIGATION
@@ -174,33 +224,25 @@ export default function BookingCalendar({
 
   const previousMonth = () => {
     setVisibleMonth(
-      (current) =>
-        new Date(current.getFullYear(), current.getMonth() - 1, 1),
+      (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1),
     );
 
-    setSelectedDate(null);
-    setSelectedStartTime(null);
+    resetSelection();
   };
 
   const nextMonth = () => {
     setVisibleMonth(
-      (current) =>
-        new Date(current.getFullYear(), current.getMonth() + 1, 1),
+      (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1),
     );
 
-    setSelectedDate(null);
-    setSelectedStartTime(null);
+    resetSelection();
   };
 
   /* ========================================
      PREVENT NAVIGATING INTO PAST MONTHS
   ======================================== */
 
-  const currentMonthStart = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    1,
-  );
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
   const canGoPrevious = visibleMonth > currentMonthStart;
 
@@ -214,7 +256,36 @@ export default function BookingCalendar({
     }
 
     setSelectedDate(date);
+
     setSelectedStartTime(null);
+
+    /*
+      If the customer changes the date,
+      their previous time selection
+      is no longer valid.
+    */
+
+    onSelectionChange(null);
+  };
+
+  /* ========================================
+     SELECT TIME
+  ======================================== */
+
+  const handleTimeSelect = (startMinutes: number) => {
+    if (!selectedDate) {
+      return;
+    }
+
+    setSelectedStartTime(startMinutes);
+
+    onSelectionChange({
+      date: selectedDate,
+
+      dateKey: formatDateKey(selectedDate),
+
+      startMinutes,
+    });
   };
 
   /* ========================================
@@ -237,6 +308,10 @@ export default function BookingCalendar({
         day: "numeric",
       })
     : null;
+
+  /* ========================================
+     RENDER
+  ======================================== */
 
   return (
     <div className="bookingCalendar">
@@ -277,7 +352,9 @@ export default function BookingCalendar({
         <div className="calendarDays">
           {calendarDays.map(({ date, currentMonth }) => {
             const past = isPastDate(date);
+
             const closed = isClosedDay(date);
+
             const dateKey = formatDateKey(date);
 
             const selected = selectedDate
@@ -293,9 +370,13 @@ export default function BookingCalendar({
                 disabled={disabled}
                 className={[
                   "calendarDay",
+
                   !currentMonth ? "calendarDay--outside" : "",
+
                   past ? "calendarDay--disabled" : "",
+
                   closed ? "calendarDay--closed" : "",
+
                   selected ? "calendarDay--selected" : "",
                 ]
                   .filter(Boolean)
@@ -351,7 +432,7 @@ export default function BookingCalendar({
                         ? "timeSlot timeSlot--selected"
                         : "timeSlot"
                     }
-                    onClick={() => setSelectedStartTime(slot)}
+                    onClick={() => handleTimeSelect(slot)}
                   >
                     {formatTime(slot)}
                   </button>
@@ -359,12 +440,36 @@ export default function BookingCalendar({
               </div>
             ) : (
               <div className="timeSlotEmpty">
-                <span>FULLY BOOKED</span>
+                {theoreticalSlots.length === 0 ? (
+                  selectedDateIsToday ? (
+                    <>
+                      <span>NO TIMES AVAILABLE</span>
 
-                <p>
-                  There are no available times for the selected services on
-                  this date.
-                </p>
+                      <p>
+                        No more appointment times are available today. Please
+                        select another date.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <span>NO TIMES AVAILABLE</span>
+
+                      <p>
+                        The selected services do not fit within the remaining
+                        booking hours for this date. Please select another date.
+                      </p>
+                    </>
+                  )
+                ) : (
+                  <>
+                    <span>FULLY BOOKED</span>
+
+                    <p>
+                      All appointment times that can accommodate your selected
+                      services are already booked on this date.
+                    </p>
+                  </>
+                )}
               </div>
             )}
 

@@ -23,14 +23,6 @@ export type Appointment = {
 };
 
 /* ========================================
-   MOCK APPOINTMENTS
-
-   TEMPORARY:
-   Later this will be replaced by
-   appointments loaded from Supabase.
-======================================== */
-
-/* ========================================
    DATE -> YYYY-MM-DD
 
    IMPORTANT:
@@ -56,6 +48,33 @@ export function formatDateKey(date: Date) {
 
 export function isClosedDay(date: Date) {
   return date.getDay() === 0;
+}
+
+/* ========================================
+   CHECK IF DATE IS TODAY
+======================================== */
+
+export function isToday(date: Date) {
+  const today = new Date();
+
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
+}
+
+/* ========================================
+   CURRENT TIME IN MINUTES
+
+   Example:
+   5:38 PM -> 1058
+======================================== */
+
+export function getCurrentMinutes() {
+  const now = new Date();
+
+  return now.getHours() * 60 + now.getMinutes();
 }
 
 /* ========================================
@@ -99,17 +118,29 @@ export function getAvailableSlots(
   durationMinutes: number,
   appointments: Appointment[],
 ) {
-  if (isClosedDay(date)) {
+  if (isClosedDay(date) || isPastDate(date)) {
     return [];
   }
 
   const slots: number[] = [];
+
+  const currentMinutes = isToday(date) ? getCurrentMinutes() : null;
 
   for (
     let startMinutes = OPENING_TIME;
     startMinutes + durationMinutes <= CLOSING_TIME;
     startMinutes += SLOT_INTERVAL
   ) {
+    /*
+      If the selected date is today,
+      do not allow appointment times
+      that have already started or passed.
+    */
+
+    if (currentMinutes !== null && startMinutes <= currentMinutes) {
+      continue;
+    }
+
     const endMinutes = startMinutes + durationMinutes;
 
     const conflict = hasAppointmentConflict(
