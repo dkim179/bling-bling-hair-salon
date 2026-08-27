@@ -537,3 +537,219 @@
     margin-top: 26px;
   }
 }
+
+/* ========================================
+   BOOKING CONFIRMATION
+======================================== */
+
+.bookingConfirmed {
+  padding-top: 18px;
+  padding-bottom: 80px;
+}
+
+.bookingConfirmed__icon {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink);
+}
+
+.bookingConfirmed > .eyebrow {
+  margin-bottom: 18px;
+}
+
+.bookingConfirmed > h2 {
+  margin: 0;
+  font-family: "DM Serif Display", serif;
+  font-size: clamp(3.4rem, 6vw, 5.6rem);
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  color: var(--charcoal);
+}
+
+.bookingConfirmed > h2 em {
+  font-weight: 400;
+}
+
+.bookingConfirmed > p:not(.eyebrow) {
+  max-width: 520px;
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.7;
+}
+
+.bookingConfirmed__details {
+  max-width: 680px;
+  margin-top: 42px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(170px, 0.8fr);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.bookingConfirmed__details > strong,
+.bookingConfirmed__details > span {
+  min-height: 76px;
+  padding: 18px 0;
+  display: flex;
+  align-items: center;
+}
+
+.bookingConfirmed__details > strong {
+  padding-right: 28px;
+  font-family: "DM Serif Display", serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.25;
+  border-right: 1px solid var(--line);
+}
+
+.bookingConfirmed__details > span {
+  padding-left: 28px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.bookingConfirmed__details > small {
+  grid-column: 1 / -1;
+  padding: 14px 0;
+  display: block;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-family: "DM Serif Display", serif;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.bookingConfirmed > .button {
+  margin-top: 30px;
+}
+
+.bookingReference {
+  max-width: 680px;
+  margin-top: 16px;
+  display: block;
+  color: var(--muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+}
+
+/* ========================================
+   BOOKING CONFIRMATION — TABLET
+======================================== */
+
+@media (max-width: 900px) {
+  .bookingConfirmed {
+    padding-top: 10px;
+  }
+
+  .bookingConfirmed__details {
+    max-width: 100%;
+  }
+}
+
+/* ========================================
+   BOOKING CONFIRMATION — MOBILE
+======================================== */
+
+@media (max-width: 600px) {
+  .bookingConfirmed {
+    padding-top: 6px;
+    padding-bottom: 56px;
+  }
+
+  .bookingConfirmed__icon {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 20px;
+  }
+
+  .bookingConfirmed > h2 {
+    font-size: 3.45rem;
+  }
+
+  .bookingConfirmed > p:not(.eyebrow) {
+    margin-top: 18px;
+    font-size: 0.8rem;
+  }
+
+  .bookingConfirmed__details {
+    margin-top: 32px;
+    grid-template-columns: 1fr;
+  }
+
+  .bookingConfirmed__details > strong,
+  .bookingConfirmed__details > span {
+    min-height: auto;
+    padding: 15px 0;
+  }
+
+  .bookingConfirmed__details > strong {
+    padding-right: 0;
+    border-right: 0;
+  }
+
+  .bookingConfirmed__details > span {
+    padding-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .bookingConfirmed__details > small {
+    padding: 13px 0;
+  }
+
+  .bookingConfirmed > .button {
+    margin-top: 26px;
+  }
+
+  .bookingReference {
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+}
+
+/* ========================================
+   BOOKING CONFLICT ACTION
+======================================== */
+
+.bookingError > p {
+  margin: 0;
+}
+
+.bookingConflictAction {
+  margin-top: 12px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: #7d3e33;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition:
+    gap 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.bookingConflictAction:hover {
+  gap: 10px;
+  opacity: 0.72;
+}
+
+.bookingConflictAction:focus-visible {
+  outline: 1px solid #7d3e33;
+  outline-offset: 4px;
+}

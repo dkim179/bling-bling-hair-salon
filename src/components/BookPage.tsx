@@ -39,6 +39,7 @@ export default function BookPage() {
 
   const [submittingBooking, setSubmittingBooking] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [bookingConflict, setBookingConflict] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
 
   /* ========================================
@@ -111,16 +112,26 @@ export default function BookPage() {
   const goToDetails = () => {
     if (!dateTimeSelection) return;
     setBookingError(null);
+    setBookingConflict(false);
     setBookingStep("details");
   };
 
   const goBackToDateTime = () => {
     setBookingError(null);
+    setBookingConflict(false);
+    setBookingStep("datetime");
+  };
+
+  const chooseAnotherTime = () => {
+    setBookingError(null);
+    setBookingConflict(false);
+    setDateTimeSelection(null);
     setBookingStep("datetime");
   };
 
   const handleConfirmBooking = async () => {
     setBookingError(null);
+    setBookingConflict(false);
 
     if (!dateTimeSelection) {
       setBookingError("Please select a date and time.");
@@ -165,10 +176,12 @@ export default function BookPage() {
         failure.code === "23P01" ||
         failure.message?.includes("appointments_no_overlap")
       ) {
+        setBookingConflict(true);
         setBookingError(
           "That appointment time was just booked by someone else. Please choose another time.",
         );
       } else {
+        setBookingConflict(false);
         setBookingError("We couldn't complete your booking. Please try again.");
       }
     } finally {
@@ -556,7 +569,22 @@ export default function BookPage() {
                   <strong>{formatDuration(totalDurationMinutes)}</strong>
                 </div>
 
-                {bookingError && <p className="bookingError">{bookingError}</p>}
+                {bookingError && (
+                  <div className="bookingError">
+                    <p>{bookingError}</p>
+
+                    {bookingConflict && (
+                      <button
+                        type="button"
+                        className="bookingConflictAction"
+                        onClick={chooseAnotherTime}
+                      >
+                        Choose another time
+                        <ArrowRight size={14} />
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 <button
                   type="button"
