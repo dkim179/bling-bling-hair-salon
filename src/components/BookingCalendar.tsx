@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -8,8 +8,10 @@ import {
   getAvailableSlots,
   isClosedDay,
   isPastDate,
-  mockAppointments,
+  type Appointment,
 } from "../data/availability";
+
+import { getAppointmentsForRange } from "../data/appointments";
 
 type BookingCalendarProps = {
   durationMinutes: number;
@@ -37,27 +39,74 @@ export default function BookingCalendar({
     null,
   );
 
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+
+  /* ========================================
+     LOAD APPOINTMENTS FROM SUPABASE
+  ======================================== */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAppointments() {
+      setLoadingAppointments(true);
+
+      const year = visibleMonth.getFullYear();
+      const month = visibleMonth.getMonth();
+
+      const firstDate = new Date(year, month, 1);
+      const lastDate = new Date(year, month + 1, 0);
+
+      try {
+        const data = await getAppointmentsForRange(
+          formatDateKey(firstDate),
+          formatDateKey(lastDate),
+        );
+
+        if (!cancelled) {
+          setAppointments(data);
+        }
+      } catch (error) {
+        console.error("Failed to load booking availability:", error);
+
+        if (!cancelled) {
+          setAppointments([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingAppointments(false);
+        }
+      }
+    }
+
+    loadAppointments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visibleMonth]);
+
   /* ========================================
      CALENDAR DAYS
   ======================================== */
 
   const calendarDays = useMemo<CalendarDay[]>(() => {
     const year = visibleMonth.getFullYear();
-
     const month = visibleMonth.getMonth();
 
     const firstDay = new Date(year, month, 1);
-
     const lastDay = new Date(year, month + 1, 0);
 
     /*
-        JS:
-        Sunday = 0
-        Monday = 1
+      JS:
+      Sunday = 0
+      Monday = 1
 
-        We want calendar:
-        Monday -> Sunday
-      */
+      We want calendar:
+      Monday -> Sunday
+    */
 
     const leadingDays = (firstDay.getDay() + 6) % 7;
 
@@ -79,7 +128,6 @@ export default function BookingCalendar({
     for (let day = 1; day <= lastDay.getDate(); day++) {
       days.push({
         date: new Date(year, month, day),
-
         currentMonth: true,
       });
     }
@@ -113,8 +161,12 @@ export default function BookingCalendar({
       return [];
     }
 
-    return getAvailableSlots(selectedDate, durationMinutes, mockAppointments);
-  }, [selectedDate, durationMinutes]);
+    return getAvailableSlots(
+      selectedDate,
+      durationMinutes,
+      appointments,
+    );
+  }, [selectedDate, durationMinutes, appointments]);
 
   /* ========================================
      MONTH NAVIGATION
@@ -122,7 +174,8 @@ export default function BookingCalendar({
 
   const previousMonth = () => {
     setVisibleMonth(
-      (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1),
+      (current) =>
+        new Date(current.getFullYear(), current.getMonth() - 1, 1),
     );
 
     setSelectedDate(null);
@@ -131,7 +184,8 @@ export default function BookingCalendar({
 
   const nextMonth = () => {
     setVisibleMonth(
-      (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1),
+      (current) =>
+        new Date(current.getFullYear(), current.getMonth() + 1, 1),
     );
 
     setSelectedDate(null);
@@ -142,7 +196,11 @@ export default function BookingCalendar({
      PREVENT NAVIGATING INTO PAST MONTHS
   ======================================== */
 
-  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const currentMonthStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1,
+  );
 
   const canGoPrevious = visibleMonth > currentMonthStart;
 
@@ -219,9 +277,7 @@ export default function BookingCalendar({
         <div className="calendarDays">
           {calendarDays.map(({ date, currentMonth }) => {
             const past = isPastDate(date);
-
             const closed = isClosedDay(date);
-
             const dateKey = formatDateKey(date);
 
             const selected = selectedDate
@@ -237,13 +293,9 @@ export default function BookingCalendar({
                 disabled={disabled}
                 className={[
                   "calendarDay",
-
                   !currentMonth ? "calendarDay--outside" : "",
-
                   past ? "calendarDay--disabled" : "",
-
                   closed ? "calendarDay--closed" : "",
-
                   selected ? "calendarDay--selected" : "",
                 ]
                   .filter(Boolean)
@@ -264,7 +316,7 @@ export default function BookingCalendar({
       ================================ */}
 
       <div className="bookingCalendar__times">
-        {!selectedDate && (
+        {!selectedDate && !loadingAppointments && (
           <div className="timeSlotEmpty">
             <span>SELECT A DATE</span>
 
@@ -272,7 +324,15 @@ export default function BookingCalendar({
           </div>
         )}
 
-        {selectedDate && (
+        {loadingAppointments && (
+          <div className="timeSlotEmpty">
+            <span>LOADING AVAILABILITY</span>
+
+            <p>Checking available appointment times.</p>
+          </div>
+        )}
+
+        {selectedDate && !loadingAppointments && (
           <>
             <div className="timeSlotHeader">
               <span>AVAILABLE TIMES</span>
@@ -302,8 +362,8 @@ export default function BookingCalendar({
                 <span>FULLY BOOKED</span>
 
                 <p>
-                  There are no available times for the selected services on this
-                  date.
+                  There are no available times for the selected services on
+                  this date.
                 </p>
               </div>
             )}
