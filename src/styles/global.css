@@ -1820,3 +1820,73 @@ em {
     height: 120px;
   }
 }
+
+/* ========================================
+   BOOKING — PRICE DETAILS
+   Final override
+======================================== */
+
+.bookingIncludedNote {
+  max-width: 520px;
+  margin: -12px 0 34px 90px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.bookingSummaryPrice {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.selectedServicePrice {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.bookingPriceDisclaimer {
+  margin-top: 24px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.65;
+}
+
+.bookingServiceList button small {
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .bookingIncludedNote {
+    margin-left: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .bookingIncludedNote {
+    margin: -10px 0 28px 50px;
+    max-width: calc(100% - 50px);
+    font-size: 0.72rem;
+  }
+
+  .bookingSummaryPrice {
+    font-size: 0.68rem;
+  }
+
+  .selectedServicePrice {
+    font-size: 0.67rem;
+  }
+
+  .bookingPriceDisclaimer {
+    font-size: 0.68rem;
+  }
+}
+

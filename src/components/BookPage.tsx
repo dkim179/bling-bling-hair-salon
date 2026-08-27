@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
+
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
 
 import {
   bookingServices,
   formatDuration,
+  formatServicePrice,
+  getServiceDurationLabel,
   type BookingAudience,
   type BookingService,
 } from "../data/booking";
@@ -19,6 +22,10 @@ export default function BookPage() {
     "services",
   );
 
+  /* ========================================
+     TOTAL DURATION
+  ======================================== */
+
   const totalDurationMinutes = useMemo(() => {
     return selectedServices.reduce(
       (total, service) => total + service.durationMinutes,
@@ -26,9 +33,17 @@ export default function BookPage() {
     );
   }, [selectedServices]);
 
+  /* ========================================
+     CHECK SELECTED
+  ======================================== */
+
   const isSelected = (serviceId: string) => {
     return selectedServices.some((service) => service.id === serviceId);
   };
+
+  /* ========================================
+     SELECT / REMOVE SERVICE
+  ======================================== */
 
   const toggleService = (service: BookingService) => {
     setSelectedServices((current) => {
@@ -48,12 +63,17 @@ export default function BookPage() {
     );
   };
 
-  /*
-    IMPORTANT:
-    Changing Men / Women does NOT clear
-    previously selected services.
-  */
+  /* ========================================
+     NAVIGATION
+  ======================================== */
+
   const changeAudience = () => {
+    /*
+      IMPORTANT:
+      Men / Women 변경 시 기존
+      서비스 선택은 그대로 유지.
+    */
+
     setAudience(null);
   };
 
@@ -69,17 +89,24 @@ export default function BookPage() {
     setBookingStep("services");
   };
 
+  /* ========================================
+     DETERMINE MEN / WOMEN
+  ======================================== */
+
   const getServiceAudience = (service: BookingService): "Men" | "Women" => {
     return service.id.startsWith("mens-") ? "Men" : "Women";
   };
 
   return (
     <main className="bookingPage">
-      {/* TOP BAR */}
+      {/* ====================================
+          TOP BAR
+      ==================================== */}
 
       <header className="bookingTopbar">
         <a className="brand" href="/" aria-label="Bling Bling Hair Salon home">
           <span>BLING BLING</span>
+
           <small>HAIR SALON</small>
         </a>
 
@@ -90,7 +117,9 @@ export default function BookPage() {
       </header>
 
       <section className="bookingShell">
-        {/* INTRO */}
+        {/* ====================================
+            INTRO
+        ==================================== */}
 
         <div className="bookingIntroBlock">
           <p className="eyebrow">BOOK AN APPOINTMENT</p>
@@ -106,9 +135,10 @@ export default function BookPage() {
           </p>
         </div>
 
-        {/* ================================
-            STEP 01 — MEN / WOMEN
-        ================================= */}
+        {/* ====================================
+            STEP 01
+            MEN / WOMEN
+        ==================================== */}
 
         {!audience && bookingStep === "services" && (
           <section className="bookingStep">
@@ -136,8 +166,6 @@ export default function BookPage() {
               </button>
             </div>
 
-            {/* KEEP CURRENT SELECTION VISIBLE */}
-
             {selectedServices.length > 0 && (
               <SelectionSummary
                 selectedServices={selectedServices}
@@ -150,9 +178,10 @@ export default function BookPage() {
           </section>
         )}
 
-        {/* ================================
-            STEP 02 — SERVICES
-        ================================= */}
+        {/* ====================================
+            STEP 02
+            SERVICES
+        ==================================== */}
 
         {audience && bookingStep === "services" && (
           <section className="bookingStep">
@@ -180,6 +209,12 @@ export default function BookPage() {
               without losing your selections.
             </p>
 
+            {/* SHAMPOO NOTE */}
+
+            <div className="bookingIncludedNote">
+              Shampoo & blow-dry are included with every service.
+            </div>
+
             <div className="bookingServiceList">
               {bookingServices[audience].map((item) => {
                 const selected = isSelected(item.id);
@@ -199,7 +234,11 @@ export default function BookPage() {
                       <strong>{item.name}</strong>
 
                       <small>
-                        Approx. {formatDuration(item.durationMinutes)}
+                        {getServiceDurationLabel(item)}
+
+                        {" · "}
+
+                        {formatServicePrice(item)}
                       </small>
                     </span>
 
@@ -215,8 +254,6 @@ export default function BookPage() {
               })}
             </div>
 
-            {/* CURRENT SELECTION */}
-
             {selectedServices.length > 0 && (
               <SelectionSummary
                 selectedServices={selectedServices}
@@ -229,9 +266,10 @@ export default function BookPage() {
           </section>
         )}
 
-        {/* ================================
-            STEP 03 — DATE & TIME
-        ================================= */}
+        {/* ====================================
+            STEP 03
+            DATE & TIME
+        ==================================== */}
 
         {bookingStep === "datetime" && (
           <section className="bookingStep">
@@ -255,7 +293,9 @@ export default function BookPage() {
             </div>
 
             <div className="bookingSelection">
-              {/* LEFT SIDE */}
+              {/* ============================
+                  LEFT SUMMARY
+              ============================ */}
 
               <div className="bookingSelection__service">
                 <div className="bookingSelectionHeader">
@@ -276,23 +316,34 @@ export default function BookPage() {
                         </span>
 
                         <strong>{service.name}</strong>
+
+                        <small className="selectedServicePrice">
+                          {formatServicePrice(service)}
+                        </small>
                       </div>
 
                       <span className="selectedServiceDuration">
-                        {formatDuration(service.durationMinutes)}
+                        {getServiceDurationLabel(service)}
                       </span>
                     </div>
                   ))}
                 </div>
 
                 <div className="selectedServiceTotal">
-                  <span>Estimated total</span>
+                  <span>Estimated time</span>
 
                   <strong>{formatDuration(totalDurationMinutes)}</strong>
                 </div>
+
+                <p className="bookingPriceDisclaimer">
+                  Final pricing for selected services may vary depending on hair
+                  length, texture, thickness, and technique.
+                </p>
               </div>
 
-              {/* RIGHT SIDE */}
+              {/* ============================
+                  RIGHT CALENDAR
+              ============================ */}
 
               <div className="bookingSelection__calendar">
                 <p className="eyebrow">AVAILABILITY</p>
@@ -320,6 +371,7 @@ export default function BookPage() {
 
 type SelectionSummaryProps = {
   selectedServices: BookingService[];
+
   totalDurationMinutes: number;
 
   removeService: (serviceId: string) => void;
@@ -331,9 +383,13 @@ type SelectionSummaryProps = {
 
 function SelectionSummary({
   selectedServices,
+
   totalDurationMinutes,
+
   removeService,
+
   getServiceAudience,
+
   onNext,
 }: SelectionSummaryProps) {
   return (
@@ -354,10 +410,14 @@ function SelectionSummary({
               <small>{getServiceAudience(service)}</small>
 
               <strong>{service.name}</strong>
+
+              <span className="bookingSummaryPrice">
+                {formatServicePrice(service)}
+              </span>
             </div>
 
             <div className="bookingCurrentSelection__right">
-              <span>{formatDuration(service.durationMinutes)}</span>
+              <span>{getServiceDurationLabel(service)}</span>
 
               <button
                 type="button"
@@ -373,7 +433,7 @@ function SelectionSummary({
 
       <div className="bookingCurrentSelection__footer">
         <div>
-          <span>ESTIMATED TOTAL</span>
+          <span>ESTIMATED TIME</span>
 
           <strong>{formatDuration(totalDurationMinutes)}</strong>
         </div>
