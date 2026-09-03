@@ -51,7 +51,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (username.trim().toLowerCase() !== "amypark") {
+    const adminUsername = Deno.env.get("ADMIN_USERNAME");
+
+    if (
+      !adminUsername ||
+      username.trim().toLowerCase() !== adminUsername.toLowerCase()
+    ) {
       return new Response(
         JSON.stringify({
           error: "Invalid username or password.",
@@ -70,7 +75,7 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const adminEmail = Deno.env.get("ADMIN_EMAIL");
 
-    if (!supabaseUrl || !supabaseAnonKey || !adminEmail) {
+    if (!supabaseUrl || !supabaseAnonKey || !adminEmail || !adminUsername) {
       console.error("Missing required Edge Function environment variables.");
 
       return new Response(
