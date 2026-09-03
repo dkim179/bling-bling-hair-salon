@@ -5,6 +5,7 @@ import "./styles/global.css";
 import "./styles/site.css";
 import "./styles/booking.css";
 import "./styles/booking-calendar.css";
+import './styles/admin.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
