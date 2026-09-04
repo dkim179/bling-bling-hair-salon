@@ -60,6 +60,7 @@ export default function AdminPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [error, setError] = useState("");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [selectedDateFilter, setSelectedDateFilter] = useState("");
 
   useEffect(() => {
     async function initializeAdmin() {
@@ -130,6 +131,32 @@ export default function AdminPage() {
       ),
     [appointments, todayDateKey],
   );
+
+  const filteredUpcomingAppointments = useMemo(() => {
+    if (!selectedDateFilter) {
+      return upcomingAppointments;
+    }
+
+    return upcomingAppointments.filter(
+      (appointment) => appointment.appointment_date === selectedDateFilter,
+    );
+  }, [upcomingAppointments, selectedDateFilter]);
+
+  const upcomingAppointmentsByDate = useMemo(() => {
+    const groups = new Map<string, Appointment[]>();
+
+    filteredUpcomingAppointments.forEach((appointment) => {
+      const existingGroup = groups.get(appointment.appointment_date);
+
+      if (existingGroup) {
+        existingGroup.push(appointment);
+      } else {
+        groups.set(appointment.appointment_date, [appointment]);
+      }
+    });
+
+    return Array.from(groups.entries());
+  }, [filteredUpcomingAppointments]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -304,11 +331,62 @@ export default function AdminPage() {
                 </span>
               </div>
 
+              {upcomingAppointments.length > 0 && (
+                <div className="adminDateFilter">
+                  <label htmlFor="appointmentDateFilter">
+                    <span>View date</span>
+
+                    <input
+                      id="appointmentDateFilter"
+                      type="date"
+                      value={selectedDateFilter}
+                      min={todayDateKey}
+                      onChange={(event) =>
+                        setSelectedDateFilter(event.target.value)
+                      }
+                    />
+                  </label>
+
+                  {selectedDateFilter && (
+                    <button
+                      type="button"
+                      className="adminClearFilterButton"
+                      onClick={() => setSelectedDateFilter("")}
+                    >
+                      Show all
+                    </button>
+                  )}
+                </div>
+              )}
+
               {upcomingAppointments.length === 0 ? (
                 <p className="adminEmptyState">No upcoming appointments.</p>
+              ) : upcomingAppointmentsByDate.length === 0 ? (
+                <p className="adminEmptyState">
+                  No appointments scheduled for this date.
+                </p>
               ) : (
-                <div className="adminAppointmentList">
-                  {upcomingAppointments.map(renderAppointment)}
+                <div className="adminDateGroups">
+                  {upcomingAppointmentsByDate.map(
+                    ([date, dateAppointments]) => (
+                      <div className="adminDateGroup" key={date}>
+                        <div className="adminDateGroupHeader">
+                          <h3>{formatDate(date)}</h3>
+
+                          <span>
+                            {dateAppointments.length}{" "}
+                            {dateAppointments.length === 1
+                              ? "appointment"
+                              : "appointments"}
+                          </span>
+                        </div>
+
+                        <div className="adminAppointmentList">
+                          {dateAppointments.map(renderAppointment)}
+                        </div>
+                      </div>
+                    ),
+                  )}
                 </div>
               )}
             </section>

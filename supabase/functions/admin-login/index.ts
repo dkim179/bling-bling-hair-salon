@@ -1,4 +1,15 @@
-import { createClient } from "@supabase/supabase-js";
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const BOOKING_NOTIFICATION_EMAIL = Deno.env.get("BOOKING_NOTIFICATION_EMAIL");
+
+type BookingEmailRequest = {
+  appointmentDate: string;
+  startTime: string;
+  endTime: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string | null;
+  services: string[];
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,81 +17,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", {
       headers: corsHeaders,
     });
   }
 
-  if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({
-        error: "Method not allowed",
-      }),
-      {
-        status: 405,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      },
-    );
-  }
-
   try {
-    const { username, password } = await req.json();
-
-    if (
-      typeof username !== "string" ||
-      typeof password !== "string" ||
-      !username.trim() ||
-      !password
-    ) {
-      return new Response(
-        JSON.stringify({
-          error: "Username and password are required.",
-        }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-    }
-
-    const adminUsername = Deno.env.get("ADMIN_USERNAME");
-
-    if (
-      !adminUsername ||
-      username.trim().toLowerCase() !== adminUsername.toLowerCase()
-    ) {
-      return new Response(
-        JSON.stringify({
-          error: "Invalid username or password.",
-        }),
-        {
-          status: 401,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const adminEmail = Deno.env.get("ADMIN_EMAIL");
-
-    if (!supabaseUrl || !supabaseAnonKey || !adminEmail || !adminUsername) {
-      console.error("Missing required Edge Function environment variables.");
+    if (!RESEND_API_KEY || !BOOKING_NOTIFICATION_EMAIL) {
+      console.error("Missing email configuration.");
 
       return new Response(
         JSON.stringify({
-          error: "Server configuration error.",
+          error: "Email service is not configured.",
         }),
         {
           status: 500,
@@ -92,25 +42,176 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
+    const {
+      appointmentDate,
+      startTime,
+      endTime,
+      customerName,
+      customerPhone,
+      customerEmail,
+      services,
+    } = (await req.json()) as BookingEmailRequest;
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: adminEmail,
-      password,
-    });
-
-    if (error || !data.session || !data.user) {
+    if (
+      !appointmentDate ||
+      !startTime ||
+      !endTime ||
+      !customerName ||
+      !customerPhone ||
+      !Array.isArray(services) ||
+      services.length === 0
+    ) {
       return new Response(
         JSON.stringify({
-          error: "Invalid username or password.",
+          error: "Missing required booking information.",
         }),
         {
-          status: 401,
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
+
+    const customerEmailRow = customerEmail
+      ? `
+        <tr>
+          <td style="padding: 5px 0; font-weight: 600;">Email</td>
+          <td style="padding: 5px 0;">${customerEmail}</td>
+        </tr>
+      `
+      : "";
+
+    const serviceList = services
+      .map((service) => `<li style="margin-bottom: 4px;">${service}</li>`)
+      .join("");
+
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Bling Bling Hair Salon <onboarding@resend.dev>",
+        to: [BOOKING_NOTIFICATION_EMAIL],
+        subject: `New Appointment - ${appointmentDate} ${startTime}`,
+        html: `
+            <div
+              style="
+                font-family: Arial, sans-serif;
+                max-width: 600px;
+                margin: 0 auto;
+                color: #302b26;
+              "
+            >
+              <h1
+                style="
+                  margin-bottom: 4px;
+                  font-size: 26px;
+                "
+              >
+                New Appointment
+              </h1>
+
+              <p
+                style="
+                  margin-top: 0;
+                  margin-bottom: 28px;
+                  color: #766f68;
+                "
+              >
+                Bling Bling Hair Salon
+              </p>
+
+              <table
+                style="
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin-bottom: 26px;
+                "
+              >
+                <tr>
+                  <td style="padding: 5px 0; font-weight: 600;">
+                    Date
+                  </td>
+                  <td style="padding: 5px 0;">
+                    ${appointmentDate}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 5px 0; font-weight: 600;">
+                    Time
+                  </td>
+                  <td style="padding: 5px 0;">
+                    ${startTime} - ${endTime}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 5px 0; font-weight: 600;">
+                    Customer
+                  </td>
+                  <td style="padding: 5px 0;">
+                    ${customerName}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 5px 0; font-weight: 600;">
+                    Phone
+                  </td>
+                  <td style="padding: 5px 0;">
+                    ${customerPhone}
+                  </td>
+                </tr>
+
+                ${customerEmailRow}
+              </table>
+
+              <h2 style="font-size: 18px;">
+                Services
+              </h2>
+
+              <ul
+                style="
+                  padding-left: 20px;
+                  margin-bottom: 28px;
+                "
+              >
+                ${serviceList}
+              </ul>
+
+              <p
+                style="
+                  padding-top: 18px;
+                  border-top: 1px solid #dfd2c4;
+                  color: #766f68;
+                  font-size: 13px;
+                "
+              >
+                Log in to the Bling Bling admin dashboard
+                to manage this appointment.
+              </p>
+            </div>
+          `,
+      }),
+    });
+
+    const emailData = await emailResponse.json();
+
+    if (!emailResponse.ok) {
+      console.error("Resend error:", emailData);
+
+      return new Response(
+        JSON.stringify({
+          error: "Unable to send booking email.",
+        }),
+        {
+          status: 500,
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",
@@ -121,12 +222,8 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-        expires_in: data.session.expires_in,
-        user: {
-          id: data.user.id,
-        },
+        success: true,
+        data: emailData,
       }),
       {
         status: 200,
@@ -137,11 +234,11 @@ Deno.serve(async (req) => {
       },
     );
   } catch (error) {
-    console.error("Admin login error:", error);
+    console.error("Unexpected email error:", error);
 
     return new Response(
       JSON.stringify({
-        error: "Unable to sign in.",
+        error: "Unexpected server error.",
       }),
       {
         status: 500,
