@@ -125,3 +125,72 @@ export async function createBooking({
 
   return data as string;
 }
+
+/* ========================================
+   SEND BOOKING NOTIFICATION TYPES
+======================================== */
+
+type SendBookingNotificationInput = {
+  appointmentDate: string;
+
+  startMinutes: number;
+  endMinutes: number;
+
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+
+  services: BookingService[];
+};
+
+/* ========================================
+   FORMAT NOTIFICATION TIME
+======================================== */
+
+function formatNotificationTime(minutes: number): string {
+  const hours24 = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+
+  const period = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 || 12;
+
+  return `${hours12}:${mins.toString().padStart(2, "0")} ${period}`;
+}
+
+/* ========================================
+   SEND BOOKING NOTIFICATION
+======================================== */
+
+export async function sendBookingNotification({
+  appointmentDate,
+  startMinutes,
+  endMinutes,
+  customerName,
+  customerPhone,
+  customerEmail = "",
+  services,
+}: SendBookingNotificationInput): Promise<void> {
+  const { error } = await supabase.functions.invoke(
+    "send-booking-email",
+    {
+      body: {
+        appointmentDate,
+
+        startTime: formatNotificationTime(startMinutes),
+        endTime: formatNotificationTime(endMinutes),
+
+        customerName,
+        customerPhone,
+        customerEmail,
+
+        services: services.map((service) => service.name),
+      },
+    },
+  );
+
+  if (error) {
+    console.error("Failed to send booking notification:", error);
+
+    throw error;
+  }
+}

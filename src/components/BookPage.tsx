@@ -4,7 +4,10 @@ import BookingCalendar, {
 
 import { useMemo, useState } from "react";
 
-import { createBooking } from "../data/appointments";
+import {
+  createBooking,
+  sendBookingNotification,
+} from "../data/appointments";
 import { formatTime } from "../data/availability";
 
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
@@ -169,6 +172,22 @@ export default function BookPage() {
 
       setBookingId(id);
       setBookingStep("confirmed");
+
+      void sendBookingNotification({
+        appointmentDate: dateTimeSelection.dateKey,
+        startMinutes: dateTimeSelection.startMinutes,
+        endMinutes:
+          dateTimeSelection.startMinutes + totalDurationMinutes,
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim(),
+        services: selectedServices,
+      }).catch((error: unknown) => {
+        console.error(
+          "Booking was created, but the notification email failed:",
+          error,
+        );
+      });
     } catch (error: unknown) {
       const failure = error as { code?: string; message?: string };
 
@@ -182,7 +201,9 @@ export default function BookPage() {
         );
       } else {
         setBookingConflict(false);
-        setBookingError("We couldn't complete your booking. Please try again.");
+        setBookingError(
+          "We couldn't complete your booking. Please try again.",
+        );
       }
     } finally {
       setSubmittingBooking(false);
