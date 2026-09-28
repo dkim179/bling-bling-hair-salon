@@ -12,6 +12,10 @@ import {
 } from "../data/availability";
 
 import { getAppointmentsForRange } from "../data/appointments";
+import {
+  getTorontoDateKey,
+  getTorontoTodayParts,
+} from "../utils/torontoTime";
 
 /* ========================================
    SELECTION TYPE
@@ -44,10 +48,10 @@ export default function BookingCalendar({
   durationMinutes,
   onSelectionChange,
 }: BookingCalendarProps) {
-  const today = new Date();
+  const torontoToday = getTorontoTodayParts();
 
   const [visibleMonth, setVisibleMonth] = useState(
-    new Date(today.getFullYear(), today.getMonth(), 1),
+    new Date(torontoToday.year, torontoToday.month - 1, 1),
   );
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -204,7 +208,7 @@ export default function BookingCalendar({
 
   const selectedDateIsToday =
     selectedDate !== null &&
-    formatDateKey(selectedDate) === formatDateKey(new Date());
+    formatDateKey(selectedDate) === getTorontoDateKey();
 
   /* ========================================
      RESET SELECTION
@@ -242,7 +246,11 @@ export default function BookingCalendar({
      PREVENT NAVIGATING INTO PAST MONTHS
   ======================================== */
 
-  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const currentMonthStart = new Date(
+    torontoToday.year,
+    torontoToday.month - 1,
+    1,
+  );
 
   const canGoPrevious = visibleMonth > currentMonthStart;
 
@@ -303,10 +311,10 @@ export default function BookingCalendar({
 
   const selectedDateLabel = selectedDate
     ? selectedDate.toLocaleDateString("en-CA", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      })
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    })
     : null;
 
   /* ========================================

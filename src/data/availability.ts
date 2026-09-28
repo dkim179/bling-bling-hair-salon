@@ -1,3 +1,8 @@
+import {
+  getTorontoCurrentMinutes,
+  getTorontoDateKey,
+} from "../utils/torontoTime";
+
 /* ========================================
    BUSINESS HOURS
 ======================================== */
@@ -26,6 +31,9 @@ export type Appointment = {
    DATE -> YYYY-MM-DD
 
    IMPORTANT:
+   This Date represents a calendar date
+   selected in the booking UI.
+
    Do not use toISOString() here because
    UTC conversion can shift the date.
 ======================================== */
@@ -52,29 +60,26 @@ export function isClosedDay(date: Date) {
 
 /* ========================================
    CHECK IF DATE IS TODAY
+
+   "Today" always means today in Toronto,
+   regardless of the customer's timezone.
 ======================================== */
 
 export function isToday(date: Date) {
-  const today = new Date();
-
-  return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
-  );
+  return formatDateKey(date) === getTorontoDateKey();
 }
 
 /* ========================================
    CURRENT TIME IN MINUTES
+
+   Always uses Toronto local time.
 
    Example:
    5:38 PM -> 1058
 ======================================== */
 
 export function getCurrentMinutes() {
-  const now = new Date();
-
-  return now.getHours() * 60 + now.getMinutes();
+  return getTorontoCurrentMinutes();
 }
 
 /* ========================================
@@ -95,12 +100,12 @@ export function hasAppointmentConflict(
     }
 
     /*
-        Overlap formula:
+      Overlap formula:
 
-        newStart < existingEnd
-        &&
-        newEnd > existingStart
-      */
+      newStart < existingEnd
+      &&
+      newEnd > existingStart
+    */
 
     return (
       startMinutes < appointment.endMinutes &&
@@ -132,9 +137,9 @@ export function getAvailableSlots(
     startMinutes += SLOT_INTERVAL
   ) {
     /*
-      If the selected date is today,
-      do not allow appointment times
-      that have already started or passed.
+      If the selected date is today in Toronto,
+      do not allow appointment times that have
+      already started or passed.
     */
 
     if (currentMinutes !== null && startMinutes <= currentMinutes) {
@@ -178,16 +183,13 @@ export function formatTime(minutes: number) {
 
 /* ========================================
    CHECK WHETHER DATE IS IN THE PAST
+
+   Past/future comparison is based on the
+   salon's Toronto calendar date.
 ======================================== */
 
 export function isPastDate(date: Date) {
-  const today = new Date();
+  const dateKey = formatDateKey(date);
 
-  today.setHours(0, 0, 0, 0);
-
-  const target = new Date(date);
-
-  target.setHours(0, 0, 0, 0);
-
-  return target < today;
+  return dateKey < getTorontoDateKey();
 }

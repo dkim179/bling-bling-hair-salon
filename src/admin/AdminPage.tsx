@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { getTorontoDateKey } from "../utils/torontoTime";
 
 type AppointmentService = {
   id?: string;
@@ -29,16 +30,6 @@ function formatTime(minutes: number) {
   const displayHours = hours % 12 || 12;
 
   return `${displayHours}:${mins.toString().padStart(2, "0")} ${period}`;
-}
-
-function getTodayDateKey() {
-  const now = new Date();
-
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
 }
 
 function formatDate(dateKey: string) {
@@ -76,7 +67,7 @@ export default function AdminPage() {
 
       setIsCheckingSession(false);
 
-      const today = getTodayDateKey();
+      const today = getTorontoDateKey();
 
       const { data, error: appointmentsError } = await supabase
         .from("appointments")
@@ -114,7 +105,7 @@ export default function AdminPage() {
     initializeAdmin();
   }, []);
 
-  const todayDateKey = getTodayDateKey();
+  const todayDateKey = getTorontoDateKey();
 
   const todayAppointments = useMemo(
     () =>
